@@ -2,31 +2,46 @@
   (:require [clojure.string :as string]
             [clojure.walk :as walk]
             [gadget.inspector :as inspector]
-            [replicant.dom :as r]))
+            [replicant.core :as r-core]
+            [replicant.dom :as r-dom]))
 
-(defonce ^:private !state (atom {:ui/banner-text "An annoying banner"}))
+(defonce ^:private !el 
+  (atom (js/document.getElementById "app")))
+
+(defonce ^:private !state 
+  (atom {:ui/banner-text "An annoying banner"}))
 
 (defn banner-view [{:ui/keys [banner-text]}]
-  [:div#banner {:style {:top 0
-                        :transition "top 0.25s"}
-                :replicant/mounting {:style {:top "-100px"}}
-                :replicant/unmounting {:style {:top "-100px"}}}
+  [:div#banner
+   {:style {:top 0
+            :transition "top 0.25s"}
+    :replicant/mounting {:style {:top "-100px"}}
+    :replicant/unmounting {:style {:top "-100px"}}}
    [:p banner-text]
-   [:button {:on {:click [[:db/dissoc :ui/banner-text]]}} "Dismiss"]])
+   [:button
+    {:on
+     {:click [[:db/dissoc :ui/banner-text]]}}
+    "Dismiss"]])
 
 (defn- edit-view [{:something/keys [draft]}]
   [:div
    [:h2 "Edit"]
-   [:form {:on {:submit [[:dom/prevent-default]
-                         [:db/assoc :something/saved [:db/get :something/draft]]]}}
+   [:form 
+    {:on 
+     {:submit
+      [[:dom/prevent-default]
+       [:db/assoc :something/saved [:db/get :something/draft]]]}}
     [:span.wrap-input
-     [:input#draft {:replicant/on-mount [[:db/assoc :something/draft-input-element :dom/node]]
-                    :on {:input [[:db/assoc :something/draft :event/target.value]]}}]
+     [:input#draft
+      {:replicant/on-mount [[:db/assoc :something/draft-input-element :dom/node]]
+       :on {:input [[:db/assoc :something/draft :event/target.value]]}}]
      (when-not (string/blank? draft)
-       [:span.icon-right {:on {:click [[:db/assoc :something/draft ""]
-                                       [:dom/set-input-text [:db/get :something/draft-input-element] ""]
-                                       [:dom/focus-element [:db/get :something/draft-input-element]]]}
-                          :title "Clear draft"}
+       [:span.icon-right
+        {:on
+         {:click [[:db/assoc :something/draft ""]
+                  [:dom/set-input-text [:db/get :something/draft-input-element] ""]
+                  [:dom/focus-element [:db/get :something/draft-input-element]]]}
+         :title "Clear draft"}
         "⨉"])]
     [:button {:type :submit} "Save draft"]]])
 
@@ -67,8 +82,8 @@
    action))
 
 (defn- render! [state]
-  (r/render
-   (js/document.getElementById "app")
+  (r-dom/render
+   @!el
    (main-view state)))
 
 (defn- event-handler [{:replicant/keys [^js js-event] :as replicant-data} actions]
@@ -93,5 +108,36 @@
 
 (defn ^:export init! []
   (inspector/inspect "App state" !state)
-  (r/set-dispatch! event-handler)
+  (r-dom/set-dispatch! event-handler)
   (start!))
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+#_{:clj-kondo/ignore [:unused-private-var]}
+(defn- replicant-dispatch
+  "Dispatch event data outside of Replicant views"
+  ;; TODO: Reimplement with public API once Replicant has one
+  [e data]
+  (let [el @!el]
+    (if (and r-core/*dispatch* el)
+      (if (get-in @r-dom/state [el :rendering?])
+        (js/requestAnimationFrame #(r-core/*dispatch* e data))
+        (r-core/*dispatch* e data))
+      (throw (js/Error. "Cannot dispatch custom event data without a global event handler. Call replicant.core/set-dispatch!")))))
+
+(comment
+  (replicant-dispatch nil [[:db/assoc :ui/banner-text "A less annoying banner"]])
+  (replicant-dispatch nil [[:db/dissoc :ui/banner-text]])
+  :rcf)
