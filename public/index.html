@@ -2,6 +2,7 @@
 <html>
 
     <head>
+        <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
         <title>Replicant Mini</title>
     </head>
 
@@ -28,8 +29,16 @@
                 cursor: pointer;
                 pointer-events: auto;
             }
+
+            .zoom-wrapper {
+                transform: scale(1.5);
+                transform-origin: top left;
+                width: 66%; /* Adjust width to fit the viewport */
+            }
         </style>
-        <div id="app"></div>
+        <div class="zoom-wrapper">
+            <div id="app"></div>
+        </div>
         <script src="js/compiled/main.js"></script>
     </body>
 
