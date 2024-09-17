@@ -23,6 +23,11 @@
      {:click [[:db/dissoc :ui/banner-text]]}}
     "Dismiss"]])
 
+(comment
+  (dispatch! nil [[:db/assoc :ui/banner-text "A less annoying banner"]])
+  (dispatch! nil [[:db/dissoc :ui/banner-text]])
+  :rcf)
+
 (defn- edit-view [{:something/keys [draft]}]
   [:div
    [:h2 "Edit"]
@@ -125,8 +130,7 @@
 
 
 
-#_{:clj-kondo/ignore [:unused-private-var]}
-(defn- replicant-dispatch
+(defn dispatch!
   "Dispatch event data outside of Replicant views"
   ;; TODO: Reimplement with public API once Replicant has one
   [e data]
@@ -137,7 +141,3 @@
         (r-core/*dispatch* e data))
       (throw (js/Error. "Cannot dispatch custom event data without a global event handler. Call replicant.core/set-dispatch!")))))
 
-(comment
-  (replicant-dispatch nil [[:db/assoc :ui/banner-text "A less annoying banner"]])
-  (replicant-dispatch nil [[:db/dissoc :ui/banner-text]])
-  :rcf)
